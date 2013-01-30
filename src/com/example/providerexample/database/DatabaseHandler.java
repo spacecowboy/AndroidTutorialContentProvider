@@ -18,14 +18,23 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-		// TODO Auto-generated method stub
-		
+		db.execSQL(Person.CREATE_TABLE);
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-		// TODO Auto-generated method stub
-		
 	}
 
+	public Person getPerson(final long id) {
+		// TODO
+		return null;
+	}
+	
+	public void putPerson(final Person person) {
+		// TODO
+	}
+	
+	public void removePerson(final Person person) {
+		// TODO
+	}
 }
