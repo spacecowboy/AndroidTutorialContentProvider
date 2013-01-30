@@ -1,8 +1,66 @@
-<TextView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/person_detail"
-    style="?android:attr/textAppearanceLarge"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="16dp"
-    tools:context=".PersonDetailFragment" />
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/personDetailScrollView"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" >
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:orientation="vertical" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="8dp"
+            android:fontFamily="sans-serif-light"
+            android:text="Firstname"
+            android:textColor="#ff707070"
+            android:textSize="18sp" />
+
+        <EditText
+            android:id="@+id/textFirstName"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="Your first name"
+            android:inputType="textPersonName"
+            android:textColor="#ff222222"
+            android:textSize="20sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="8dp"
+            android:fontFamily="sans-serif-light"
+            android:text="Lastname"
+            android:textColor="#ff707070"
+            android:textSize="18sp" />
+
+        <EditText
+            android:id="@+id/textLastName"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="Your last name"
+            android:inputType="textPersonName"
+            android:textColor="#ff222222"
+            android:textSize="20sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="8dp"
+            android:fontFamily="sans-serif-light"
+            android:text="Biography"
+            android:textColor="#ff707070"
+            android:textSize="18sp" />
+
+        <EditText
+            android:id="@+id/textBio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Type anything here"
+            android:inputType="textMultiLine|textAutoCorrect"
+            android:textColor="#ff222222"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+</ScrollView>
