@@ -381,6 +381,366 @@ a column that you needed. Only changes needed in the Person class, reinstall the
 app and you're good to go.
 
 
+## Making a ContentProvider
+We will only be concerned with reading data from the database with our provider
+at first, so making it will be quick. First we need to create the shell of the
+class. The newer versions of the Android SDK make this easy. Go to New ->
+Other. Then select "Android Object".
+
+![new android object](newandroidobject.png)
+
+Next select "ContentProvider" from the list!
+
+![new content provider](newcontentprovider.png)
+
+It's important to keep in mind what you type as your authority. It should
+basically be "your.package.provider", but that's just a convention I read
+somewhere. It would be anything but must be unique to your application.
+I went with *com.example.providerexample.provider*. Exported isn't needed
+as we will only use the provider internally so far.
+
+![choosing authority](newcontentprovider2.png)
+
+Now you have the shell of a Provider done! This is the complete generated class:
+
+```java
+public class PersonProvider extends ContentProvider {
+	public PersonProvider() {
+	}
+
+	@Override
+	public int delete(Uri uri, String selection, String[] selectionArgs) {
+		// Implement this to handle requests to delete one or more rows.
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public String getType(Uri uri) {
+		// TODO: Implement this to handle requests for the MIME type of the data
+		// at the given URI.
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public Uri insert(Uri uri, ContentValues values) {
+		// TODO: Implement this to handle requests to insert a new row.
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public boolean onCreate() {
+		// TODO: Implement this to initialize your content provider on startup.
+		return false;
+	}
+
+	@Override
+	public Cursor query(Uri uri, String[] projection, String selection,
+			String[] selectionArgs, String sortOrder) {
+		// TODO: Implement this to handle query requests from clients.
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public int update(Uri uri, ContentValues values, String selection,
+			String[] selectionArgs) {
+		// TODO: Implement this to handle requests to update one or more rows.
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+}
+```
+
+Since we only care about reading persons so far, we only need to concern
+ourselves with the *onCreate* and *query* methods. We also need to come
+up with a *URI*, basically a path that we can use to differentiate between
+different queries.
+
+Start by adding the following fields at the top of the Provider:
+
+```java
+	// All URIs share these parts
+	public static final String AUTHORITY = "com.example.providerexample.provider";
+	public static final String SCHEME = "content://";
+
+	// URIs
+	// Used for all persons
+	public static final String PERSONS = SCHEME + AUTHORITY + "/person";
+	public static final Uri URI_PERSONS = Uri.parse(PERSONS);
+	// Used for a single person, just add the id to the end
+	public static final String PERSON_BASE = PERSONS + "/";
+```
+
+Change the *onCreate* method to:
+
+```java
+    @Override
+	public boolean onCreate() {
+		return true;
+	}
+```
+
+The *query* method is not that complicated either. This is the shell we
+are working from:
+
+```java
+    @Override
+	public Cursor query(Uri uri, String[] projection, String selection,
+			String[] selectionArgs, String sortOrder) {
+		Cursor result = null;
+		if (URI_PERSONS.equals(uri)) {
+
+		}
+		else if (uri.toString().startsWith(PERSON_BASE)) {
+
+		}
+		else {
+		throw new UnsupportedOperationException("Not yet implemented");
+		}
+
+		return result;
+	}
+```
+
+Either you can get a cursor of all persons, or you can get a cursor with
+a single person. The single person operation is already implemented in
+getPerson(), so doing basically the same we get:
+
+```java
+            final long id = Long.parseLong(uri.getLastPathSegment());
+			result = DatabaseHandler
+					.getInstance(getContext())
+					.getReadableDatabase()
+					.query(Person.TABLE_NAME, Person.FIELDS,
+							Person.COL_ID + " IS ?",
+							new String[] { String.valueOf(id) }, null, null,
+							null, null);
+```
+
+Getting all persons is even simpler:
+
+```java
+			result = DatabaseHandler
+					.getInstance(getContext())
+					.getReadableDatabase()
+					.query(Person.TABLE_NAME, Person.FIELDS, null, null, null,
+							null, null, null);
+```
+
+You can note that I am outright ignoring the selection and order parameters
+of the provider method, as well as the projection. I don't care about selections
+so far because there is no use case for them yet. The projection I ignore
+because the only valid projection is defined in the Person class, as far as
+I care. This is very convenient if we ever make use of a ViewBinder.
+
+We're not completely done yet however. The provider works, in the sense that
+it will return cursors with the result. But we also want that to update
+whenever the database updates. To do that, we have to notify listeners
+on the URIs that things have changed. To do that, turn back to the
+DatabaseHandler.
+
+Every time something changes, we must notify the listeners. Only two methods
+change the content, and that is *removePerson* and *putPerson*. First, make
+a new method that does the actual notifying:
+
+```java
+	private void notifyProviderOnPersonChange() {
+		context.getContentResolver().notifyChange(
+				PersonProvider.URI_PERSONS, null, false);
+	}
+```
+
+And call that method any time something changes. *putPerson* gets this added
+before its return statement:
+
+```java
+        if (success) {
+			notifyProviderOnPersonChange();
+		}
+```
+
+And similarly for *removePerson*:
+
+```java
+		if (result > 0) {
+			notifyProviderOnPersonChange();
+		}
+```
+
+That's it. We're done. Here are the complete *PersonProvider* and *DatabaseHandler* classes before we move on to displaying the content:
+
+```java
+public class DatabaseHandler extends SQLiteOpenHelper {
+
+	private static DatabaseHandler singleton;
+
+	public static DatabaseHandler getInstance(final Context context) {
+		if (singleton == null) {
+			singleton = new DatabaseHandler(context);
+		}
+		return singleton;
+	}
+
+	private static final int DATABASE_VERSION = 1;
+	private static final String DATABASE_NAME = "providerExample";
+
+	private final Context context;
+
+	public DatabaseHandler(Context context) {
+		super(context, DATABASE_NAME, null, DATABASE_VERSION);
+		this.context = context;
+	}
+
+	@Override
+	public void onCreate(SQLiteDatabase db) {
+		db.execSQL(Person.CREATE_TABLE);
+	}
+
+	@Override
+	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+	}
+
+	public synchronized Person getPerson(final long id) {
+		final SQLiteDatabase db = this.getReadableDatabase();
+		final Cursor cursor = db.query(Person.TABLE_NAME, Person.FIELDS,
+				Person.COL_ID + " IS ?", new String[] { String.valueOf(id) },
+				null, null, null, null);
+		if (cursor == null || cursor.isAfterLast()) {
+			return null;
+		}
+
+		Person item = null;
+		if (cursor.moveToFirst()) {
+			item = new Person(cursor);
+		}
+		cursor.close();
+		return item;
+	}
+
+	public synchronized boolean putPerson(final Person person) {
+		boolean success = false;
+		int result = 0;
+		final SQLiteDatabase db = this.getWritableDatabase();
+
+		if (person.id > -1) {
+			result += db.update(Person.TABLE_NAME, person.getContent(),
+					Person.COL_ID + " IS ?",
+					new String[] { String.valueOf(person.id) });
+		}
+
+		if (result > 0) {
+			success = true;
+		} else {
+			// Update failed or wasn't possible, insert instead
+			final long id = db.insert(Person.TABLE_NAME, null,
+					person.getContent());
+
+			if (id > -1) {
+				person.id = id;
+				success = true;
+			}
+		}
+
+		if (success) {
+			notifyProviderOnPersonChange();
+		}
+
+		return success;
+	}
+
+	public synchronized int removePerson(final Person person) {
+		final SQLiteDatabase db = this.getWritableDatabase();
+		final int result = db.delete(Person.TABLE_NAME,
+				Person.COL_ID + " IS ?",
+				new String[] { Long.toString(person.id) });
+
+		if (result > 0) {
+			notifyProviderOnPersonChange();
+		}
+		return result;
+	}
+
+	private void notifyProviderOnPersonChange() {
+		context.getContentResolver().notifyChange(
+				PersonProvider.URI_PERSONS, null, false);
+	}
+}
+```
+
+```java
+public class PersonProvider extends ContentProvider {
+
+	// All URIs share these parts
+	public static final String AUTHORITY = "com.example.providerexample.provider";
+	public static final String SCHEME = "content://";
+
+	// URIs
+	// Used for all persons
+	public static final String PERSONS = SCHEME + AUTHORITY + "/person";
+	public static final Uri URI_PERSONS = Uri.parse(PERSONS);
+	// Used for a single person, just add the id to the end
+	public static final String PERSON_BASE = PERSONS + "/";
+
+	public PersonProvider() {
+	}
+
+	@Override
+	public int delete(Uri uri, String selection, String[] selectionArgs) {
+		// Implement this to handle requests to delete one or more rows.
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public String getType(Uri uri) {
+		// TODO: Implement this to handle requests for the MIME type of the data
+		// at the given URI.
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public Uri insert(Uri uri, ContentValues values) {
+		// TODO: Implement this to handle requests to insert a new row.
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public boolean onCreate() {
+		return true;
+	}
+
+	@Override
+	public Cursor query(Uri uri, String[] projection, String selection,
+			String[] selectionArgs, String sortOrder) {
+		Cursor result = null;
+		if (URI_PERSONS.equals(uri)) {
+			result = DatabaseHandler
+					.getInstance(getContext())
+					.getReadableDatabase()
+					.query(Person.TABLE_NAME, Person.FIELDS, null, null, null,
+							null, null, null);
+		} else if (uri.toString().startsWith(PERSON_BASE)) {
+			final long id = Long.parseLong(uri.getLastPathSegment());
+			result = DatabaseHandler
+					.getInstance(getContext())
+					.getReadableDatabase()
+					.query(Person.TABLE_NAME, Person.FIELDS,
+							Person.COL_ID + " IS ?",
+							new String[] { String.valueOf(id) }, null, null,
+							null, null);
+		} else {
+			throw new UnsupportedOperationException("Not yet implemented");
+		}
+
+		return result;
+	}
+
+	@Override
+	public int update(Uri uri, ContentValues values, String selection,
+			String[] selectionArgs) {
+		// TODO: Implement this to handle requests to update one or more rows.
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+}
+```
+
 ## Making some layouts
 Let's get ready to use our new database. Obviously the layouts provided by the wizard
 aren't optimized to display information about our Persons. Let's remedy that!
@@ -593,11 +953,143 @@ selectors on top. The items in the list will now look like this:
 
 We are now at commit 1a0b5e10466e1cf0500c698bb95cb2a241ec91bb.
 
-### Make the app use the new layouts
+## Make the app use the new layouts and load the data
 By now you should have one or two compiler errors because we removed
 some things that was used in the fragments. Now we fix the errors
 by making use of our new layouts instead.
 
-#### Fixing details fragment
+### Fixing details fragment
+Open "PersonDetailFragment.java" and you should be presented with this class:
 
-#### Fixing list view
+```java
+public class PersonDetailFragment extends Fragment {
+    /**
+     * The fragment argument representing the item ID that this fragment
+     * represents.
+     */
+    public static final String ARG_ITEM_ID = "item_id";
+
+    /**
+     * The dummy content this fragment is presenting.
+     */
+    private DummyContent.DummyItem mItem;
+
+    /**
+     * Mandatory empty constructor for the fragment manager to instantiate the
+     * fragment (e.g. upon screen orientation changes).
+     */
+    public PersonDetailFragment() {
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        if (getArguments().containsKey(ARG_ITEM_ID)) {
+            // Load the dummy content specified by the fragment
+            // arguments. In a real-world scenario, use a Loader
+            // to load content from a content provider.
+            mItem = DummyContent.ITEM_MAP.get(getArguments().getString(ARG_ITEM_ID));
+        }
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+            Bundle savedInstanceState) {
+        View rootView = inflater.inflate(R.layout.fragment_person_detail, container, false);
+
+        // Show the dummy content as text in a TextView.
+        if (mItem != null) {
+            ((TextView) rootView.findViewById(R.id.person_detail)).setText(mItem.content);
+        }
+
+        return rootView;
+    }
+}
+```
+
+Starting from the top, we have to change from the dummy class to the
+Person class, use the databasehandler to get the person object and
+finally use the new layout we made earlier.
+
+Additionally, we will save any updates we make in the onPause method.
+That way, the content is saved everytime the screen goes off or the
+fragment goes away.
+
+The result:
+
+```java
+public class PersonDetailFragment extends Fragment {
+    /**
+     * The fragment argument representing the item ID that this fragment
+     * represents.
+     */
+    public static final String ARG_ITEM_ID = "item_id";
+
+    /**
+     * The person this fragment is presenting.
+     */
+    private Person mItem;
+
+    /**
+     * The UI elements showing the details of the Person
+     */
+    private TextView textFirstName;
+    private TextView textLastName;
+    private TextView textBio;
+
+    /**
+     * Mandatory empty constructor for the fragment manager to instantiate the
+     * fragment (e.g. upon screen orientation changes).
+     */
+    public PersonDetailFragment() {
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        if (getArguments().containsKey(ARG_ITEM_ID)) {
+        	// Should use the contentprovider here ideally
+            mItem = DatabaseHandler.getInstance(getActivity()).getPerson(getArguments().getLong(ARG_ITEM_ID));
+        }
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+            Bundle savedInstanceState) {
+        View rootView = inflater.inflate(R.layout.fragment_person_detail, container, false);
+
+        if (mItem != null) {
+            textFirstName = ((TextView) rootView.findViewById(R.id.textFirstName));
+            textFirstName.setText(mItem.firstname);
+
+            textLastName = ((TextView) rootView.findViewById(R.id.textLastName));
+            textLastName.setText(mItem.lastname);
+
+            textBio = ((TextView) rootView.findViewById(R.id.textBio));
+            textBio.setText(mItem.bio);
+        }
+
+        return rootView;
+    }
+
+    @Override
+    public void onPause() {
+    	super.onPause();
+    	updatePersonFromUI();
+    }
+
+    private void updatePersonFromUI() {
+    	if (mItem != null) {
+    		mItem.firstname = textFirstName.getText().toString();
+    		mItem.lastname = textLastName.getText().toString();
+    		mItem.bio = textBio.getText().toString();
+
+    		DatabaseHandler.getInstance(getActivity()).putPerson(mItem);
+        }
+    }
+}
+```
+
+### Fixing list view
