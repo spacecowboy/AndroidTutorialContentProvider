@@ -43,6 +43,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
+        android:maxLines="3"
         android:paddingLeft="4dp"
         android:paddingRight="4dp"
         android:textColor="#ff8d8d8d"

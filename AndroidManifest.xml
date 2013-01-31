@@ -30,6 +30,13 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".PersonListActivity" />
         </activity>
+
+        <provider
+            android:name="com.example.providerexample.database.PersonProvider"
+            android:authorities="com.example.providerexample.provider"
+            android:enabled="true"
+            android:exported="false" >
+        </provider>
     </application>
 
 </manifest>

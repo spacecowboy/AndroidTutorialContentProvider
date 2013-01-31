@@ -7,7 +7,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.example.providerexample.dummy.DummyContent;
+import com.example.providerexample.database.DatabaseHandler;
+import com.example.providerexample.database.Person;
 
 /**
  * A fragment representing a single Person detail screen.
@@ -23,9 +24,16 @@ public class PersonDetailFragment extends Fragment {
     public static final String ARG_ITEM_ID = "item_id";
 
     /**
-     * The dummy content this fragment is presenting.
+     * The person this fragment is presenting.
      */
-    private DummyContent.DummyItem mItem;
+    private Person mItem;
+    
+    /**
+     * The UI elements showing the details of the Person
+     */
+    private TextView textFirstName;
+    private TextView textLastName;
+    private TextView textBio;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -39,10 +47,8 @@ public class PersonDetailFragment extends Fragment {
         super.onCreate(savedInstanceState);
 
         if (getArguments().containsKey(ARG_ITEM_ID)) {
-            // Load the dummy content specified by the fragment
-            // arguments. In a real-world scenario, use a Loader
-            // to load content from a content provider.
-            mItem = DummyContent.ITEM_MAP.get(getArguments().getString(ARG_ITEM_ID));
+        	// Should use the contentprovider here ideally
+            mItem = DatabaseHandler.getInstance(getActivity()).getPerson(getArguments().getLong(ARG_ITEM_ID));
         }
     }
 
@@ -51,11 +57,33 @@ public class PersonDetailFragment extends Fragment {
             Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_person_detail, container, false);
 
-        // Show the dummy content as text in a TextView.
         if (mItem != null) {
-            ((TextView) rootView.findViewById(R.id.person_detail)).setText(mItem.content);
+            textFirstName = ((TextView) rootView.findViewById(R.id.textFirstName));
+            textFirstName.setText(mItem.firstname);
+            
+            textLastName = ((TextView) rootView.findViewById(R.id.textLastName));
+            textLastName.setText(mItem.lastname);
+            
+            textBio = ((TextView) rootView.findViewById(R.id.textBio));
+            textBio.setText(mItem.bio);
         }
 
         return rootView;
+    }
+    
+    @Override
+    public void onPause() {
+    	super.onPause();
+    	updatePersonFromUI();
+    }
+    
+    private void updatePersonFromUI() {
+    	if (mItem != null) {
+    		mItem.firstname = textFirstName.getText().toString();
+    		mItem.lastname = textLastName.getText().toString();
+    		mItem.bio = textBio.getText().toString();
+    		
+    		DatabaseHandler.getInstance(getActivity()).putPerson(mItem);
+        }
     }
 }
