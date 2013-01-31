@@ -1093,3 +1093,112 @@ public class PersonDetailFragment extends Fragment {
 ```
 
 ### Fixing list view
+First we need to use the layout defined in "fragment_person_list.xml". This is
+more or less only because I want a grey background in the list.
+
+Add:
+```java
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    	return inflater.inflate(R.layout.fragment_person_list, null);
+    }
+```
+
+Next we set the adapter using a *SimpleCursorAdapter*.
+Initially it has a null cursor. The data is getting loaded using a *Loader*.
+So in *onCreate*, change from:
+
+```java
+		// TODO: replace with a real list adapter.
+		setListAdapter(new ArrayAdapter<DummyContent.DummyItem>(getActivity(),
+				android.R.layout.simple_list_item_activated_1,
+				android.R.id.text1, DummyContent.ITEMS));
+```
+
+to:
+```java
+setListAdapter(new SimpleCursorAdapter(getActivity(),
+				R.layout.person_listitem, null, new String[] {
+						Person.COL_FIRSTNAME, Person.COL_LASTNAME,
+						Person.COL_BIO }, new int[] { R.id.cardFirstName,
+						R.id.cardLastName, R.id.cardDescription }, 0));
+
+		// Load the content
+		getLoaderManager().initLoader(0, null, new LoaderCallbacks<Cursor>() {
+			@Override
+			public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+				return new CursorLoader(getActivity(),
+						PersonProvider.URI_PERSONS, Person.FIELDS, null, null,
+						null);
+			}
+
+			@Override
+			public void onLoadFinished(Loader<Cursor> loader, Cursor c) {
+				((SimpleCursorAdapter) getListAdapter()).swapCursor(c);
+			}
+
+			@Override
+			public void onLoaderReset(Loader<Cursor> arg0) {
+				((SimpleCursorAdapter) getListAdapter()).swapCursor(null);
+			}
+		});
+```
+
+As a last step, update the *onListItemClick* method to utilize the Cursor instead.
+
+```java
+	@Override
+	public void onListItemClick(ListView listView, View view, int position,
+			long id) {
+		super.onListItemClick(listView, view, position, id);
+
+		// Notify the active callbacks interface (the activity, if the
+		// fragment is attached to one) that an item has been selected.
+		mCallbacks.onItemSelected(getListAdapter().getItemId(position));
+	}
+```
+
+But, we must also change the callback interface to use a Long instead of
+a String to match our database ID and what the Fragment expects.
+
+![Change to long](changetolongarg.png)
+
+Make suitable changes everywhere. In the same file update the dummyCallback:
+
+```java
+private static Callbacks sDummyCallbacks = new Callbacks() {
+		@Override
+		public void onItemSelected(long id) {
+		}
+	};
+```
+
+And in PersonListActivity update *onItemSelected*:
+
+```java
+    @Override
+    public void onItemSelected(long id) {
+        if (mTwoPane) {
+            // In two-pane mode, show the detail view in this activity by
+            // adding or replacing the detail fragment using a
+            // fragment transaction.
+            Bundle arguments = new Bundle();
+            arguments.putLong(PersonDetailFragment.ARG_ITEM_ID, id);
+            PersonDetailFragment fragment = new PersonDetailFragment();
+            fragment.setArguments(arguments);
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.person_detail_container, fragment)
+                    .commit();
+
+        } else {
+            // In single-pane mode, simply start the detail activity
+            // for the selected item ID.
+            Intent detailIntent = new Intent(this, PersonDetailActivity.class);
+            detailIntent.putExtra(PersonDetailFragment.ARG_ITEM_ID, id);
+            startActivity(detailIntent);
+        }
+    }
+```
+## Add a new button
+Running the app now should present an empty list. Not that interesting!
+We need to be able to add some items. Just implement a menu item for that:
