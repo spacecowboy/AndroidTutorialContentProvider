@@ -1,4 +1,3 @@
-
 # Things I wish I'd known about sooner: Lists, SQLite and ContentProviders
 
 ## Introduction
@@ -42,13 +41,13 @@ This is not the same as the least required android version to run your app.
 ### Create a new project
 Go to the menu, select New, Other, Android Application Project.
 
-(IMG!)
-(IMG!)
+![New project](newandroid.png)
+![New project details](newandroid2.png)
 
 I am going to go
 with the MasterDetail style to get a nice two-pane view on tablets for free.
 
-(IMG!)
+![Setting the default layout](newandroid3.png)
 
 I selected to name my "items" Persons.
 
