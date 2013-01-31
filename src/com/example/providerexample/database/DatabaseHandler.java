@@ -6,6 +6,15 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 public class DatabaseHandler extends SQLiteOpenHelper {
+	
+	private static DatabaseHandler singleton;
+	
+	public static DatabaseHandler getInstance(final Context context) {
+		if (singleton == null) {
+			singleton = new DatabaseHandler(context);
+		}
+		return singleton;
+	}
 
 	private static final int DATABASE_VERSION = 1;
 	private static final String DATABASE_NAME = "providerExample";
@@ -26,7 +35,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 	}
 
-	public Person getPerson(final long id) {
+	public synchronized Person getPerson(final long id) {
 		final SQLiteDatabase db = this.getReadableDatabase();
 		final Cursor cursor = db.query(Person.TABLE_NAME, Person.FIELDS,
 				Person.COL_ID + " IS ?", new String[] { String.valueOf(id) },
@@ -40,11 +49,10 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 			item = new Person(cursor);
 		}
 		cursor.close();
-		db.close();
 		return item;
 	}
 
-	public boolean putPerson(final Person person) {
+	public synchronized boolean putPerson(final Person person) {
 		boolean success = false;
 		int result = 0;
 		final SQLiteDatabase db = this.getWritableDatabase();
@@ -67,18 +75,16 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 				success = true;
 			}
 		}
-
-		db.close();
 		
 		return success;
 	}
 
-	public int removePerson(final Person person) {
+	public synchronized int removePerson(final Person person) {
 		final SQLiteDatabase db = this.getWritableDatabase();
 		final int result = db.delete(Person.TABLE_NAME,
 				Person.COL_ID + " IS ?",
 				new String[] { Long.toString(person.id) });
-		db.close();
+
 		return result;
 	}
 }
