@@ -77,27 +77,25 @@ first thing we want to do is to replace this with the SQLite database.
 First create a new package for your database (not necessary, it's just nice).
 I'll name it "com.example.providerexample.database".
 
-(IMG!)
+![New package](newpkg.png)
 
 Next, in that package create a new class called "DatabaseHandler".
 
-(IMG!)
+![New class](newdbhandler.png)
+
 Once you
-have the class open, make it extend "SQLiteOpenHelper".
-
-(IMG!)
-
-Save. Eclipse should now complain about SQLiteOpenHelper needing to be
+have the class open, make it extend "SQLiteOpenHelper" and save.
+Eclipse should now complain about SQLiteOpenHelper needing to be
 imported. Put the text cursor
 somewhere in "SQLiteOpenHelper", hit **CTRL-1**, and select
 "import SQLiteOpenHelper.."
 
-(IMG!)
+![Extending the super class](newdbhandler2.png)
 
 Save. Now, we need to implement the needed methods. Put the text cursor instead
 somewhere in "DatabaseHandler", **CTRL-1**, "Add unimplemented methods..".
 
-(IMG!)
+![Auto fixing errors](newdbhandler3.png)
 
 The last thing missing is a constructor. Instead of adding a default one, add
 the following code to the top of the class:
@@ -462,7 +460,7 @@ with the following to get a more interesting view:
 
 This will look like this:
 
-(IMG!)
+![Fancy person detail view](persondetailview.png)
 
 The whole thing is wrapped in a scrollview to allow people to have really long
 biographies even on small screens.
@@ -516,7 +514,7 @@ the following in it:
 Create a new layout xml file called "person_listitem.xml", make the
 root view a linear vertical layout.
 
-(IMG!)
+![New layout file](newlayoutfile.png)
 
 You want the file contents to look like:
 
@@ -589,7 +587,9 @@ its content:
 ```
 
 This is a straight up list view with a grey background and it draws
-selectors on top.
+selectors on top. The items in the list will now look like this:
+
+![List item layout](cardItem.png)
 
 We are now at commit 1a0b5e10466e1cf0500c698bb95cb2a241ec91bb.
 
