@@ -34,6 +34,14 @@ have to be. We will use the Provider to supply our list with content. The advant
 over a simple ArrayAdapter will be that if the data changes, the list will change,
 all by itself, as it happens.
 
+### What's a Loader
+Loader is a class offered by the Android Framework. It loads (surprise) data
+in a background thread and offers a callback interface to allow you to
+use that data once it's loaded. We will focus entirely on the case of using
+the Loader together with a database cursor. You can use a Loader to load
+anything in the background though. So if you have data stored as txt files,
+you can use a Loader then as well.
+
 ### What's SQLite and why do I want to store data in a database
 SQLite is a dialect of SQL, which stands for *Simple Query Language*. There are
 many dialects of SQL and this is the one supported by Android. It is a light and
@@ -48,7 +56,7 @@ searches among *millions* of entries in real time.
 I will be using Eclipse together with the standard SDK only. Target will be Jelly Bean MR2
 (Android 4.2), but compatibility will be preserved back to Ice Cream Sandwich.
 I am assuming that you have managed to install Eclipse together with the SDK and
-are good to go. If not, follow the steps here (LINK!). Make sure you have downloaded
+are good to go. If not, follow the steps [here](http://developer.android.com/sdk/installing/bundle.html). Make sure you have downloaded
 the SDK for the Android version you intend to compile against (in our case, android-17).
 This is not the same as the least required android version to run your app.
 
@@ -1188,6 +1196,25 @@ public class PersonDetailFragment extends Fragment {
     }
 }
 ```
+
+#### Why not use the provider here?
+It would be good practice to use a Loader to fetch the Person from the Provider,
+if only just because the data would be loaded on a background thread. Right
+now the fragment is fetching the person on the UI thread.
+
+First, I wanted to show how to use an SQLite database without a ContentProvider.
+As you can see, the changes from some kind of ArrayAdapter situation are quite
+minimal in the fragments/activities.
+
+Second, fetching the data on a background thread is just about the only
+benefit we will get from using a Loader in the detail fragment. We **DON'T**
+want the data to auto update in here like we want it to do in the List.
+Because consider if it is possible that the data is changed somewhere else,
+maybe you implement some kind of synchronization service. It would be really
+bad user experience to have your entire item change as you were editing it.
+
+Fetching a single item on the UI thread is fine for now. If you have more
+advanced ideas in mind, yes you should use a Loader.
 
 ### Fixing list view
 First we need to use the layout defined in "fragment_person_list.xml". This is
