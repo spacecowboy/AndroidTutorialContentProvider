@@ -10,12 +10,23 @@ to them both. The final result will look like this:
 
 ![On Nexus7](readme_img/nexus7_framed.png)
 
+The structure of the tutorial might not be common. I am going to start by
+creating the app, documenting all the steps on the way. Once that's done,
+I will explain some things in more detail.
+
 To start with, we're going to have to start a new project. This means there
 will be a small amount of boiler plate to deal with before we can actually
 get our code running.
 
 Somewhere in the middle, I will be taking a detour to make those nice looking layouts.
 If you don't care about the layout stuff, just skip that section.
+
+The final step is to make the app use the new layouts, and load the data
+from our database into them.
+
+Once the app is complete, I can explain a few things in more detail by
+pointing to the code just created.
+
 
 ### Motivation
 Many tutorials only show how to use ArrayAdapters and I find that problematic.
