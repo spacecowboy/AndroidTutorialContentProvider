@@ -8,7 +8,7 @@ to them both. The final result will look like this:
 
 ![On Galaxy Nexus](readme_img/gnex_framed.png)
 
-![On Nexus7](readme_img(nexus7_framed.png)
+![On Nexus7](readme_img/nexus7_framed.png)
 
 To start with, we're going to have to start a new project. This means there
 will be a small amount of boiler plate to deal with before we can actually
