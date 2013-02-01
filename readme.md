@@ -117,6 +117,15 @@ The last thing missing is a constructor. Instead of adding a default one, add
 the following code to the top of the class:
 
 ```java
+    private static DatabaseHandler singleton;
+
+	public static DatabaseHandler getInstance(final Context context) {
+		if (singleton == null) {
+			singleton = new DatabaseHandler(context);
+		}
+		return singleton;
+	}
+
 	private static final int DATABASE_VERSION = 1;
 	private static final String DATABASE_NAME = "providerExample";
 
@@ -285,17 +294,17 @@ do the following: add/update a person, remove a person and of course get a perso
 Let's add methods corresponding to those cases:
 
 ```java
-	public Person getPerson(final long id) {
+	public synchronized Person getPerson(final long id) {
 		// TODO
 		return null;
 	}
 
-	public boolean putPerson(final Person person) {
+	public synchronized boolean putPerson(final Person person) {
 		// TODO
         return false;
 	}
 
-	public int removePerson(final Person person) {
+	public synchronized int removePerson(final Person person) {
 		// TODO
         return 0;
 	}
@@ -306,11 +315,15 @@ Your case might differ but I find that if my code wants to save a person,
 then it wants to save it regardless if it is already present in the
 database or not.
 
+The methods are *synchronized* because we are doing to use loaders to load
+the data, which run on separate background threads. So we want to make sure
+that only one thread is reading/writing at any given time.
+
 Let's start with *getPerson*. All we want to do is query the database
 for a row with the specified id.
 
 ```java
-	public Person getPerson(final long id) {
+	public synchronized Person getPerson(final long id) {
 		final SQLiteDatabase db = this.getReadableDatabase();
 		final Cursor cursor = db.query(Person.TABLE_NAME,
 				Person.FIELDS, Person.COL_ID + " IS ?",
@@ -324,7 +337,7 @@ for a row with the specified id.
 			item = new Person(cursor);
 		}
 		cursor.close();
-		db.close();
+
 		return item;
 	}
 ```
@@ -336,12 +349,12 @@ row in the database matches the specified ID. IDs start at 1, so -1 is
 always a safe default value. The delete method is similarly simple:
 
 ```java
-	public int removePerson(final Person person) {
+	public synchronized int removePerson(final Person person) {
 		final SQLiteDatabase db = this.getWritableDatabase();
 		final int result = db.delete(Person.TABLE_NAME,
 				Person.COL_ID + " IS ?",
 				new String[] { Long.toString(person.id) });
-		db.close();
+
         return result;
 	}
 ```
@@ -354,7 +367,7 @@ because it is both an insert and an update method.
 First, we try to update the person. If that fails, we insert it instead.
 
 ```java
-	public boolean putPerson(final Person person) {
+	public synchronized boolean putPerson(final Person person) {
 		boolean success = false;
 		int result = 0;
 		final SQLiteDatabase db = this.getWritableDatabase();
@@ -377,8 +390,6 @@ First, we try to update the person. If that fails, we insert it instead.
 				success = true;
 			}
 		}
-
-		db.close();
 
 		return success;
 	}
@@ -413,6 +424,11 @@ I went with *com.example.providerexample.provider*. Exported isn't needed
 as we will only use the provider internally so far.
 
 ![choosing authority](readme_img/newcontentprovider2.png)
+
+By default, the wizard places the class in your main package. I want it to
+be in the database package. Remember if you move it, you must change the
+corresponding package name in the *AndroidManifest.xml* or your app will
+crash on start.
 
 Now you have the shell of a Provider done! This is the complete generated class:
 
@@ -1186,7 +1202,7 @@ Add:
 ```
 
 Next we set the adapter using a *SimpleCursorAdapter*.
-Initially it has a null cursor. The data is getting loaded using a *Loader*.
+Initially it has a null cursor. The data is loaded using a *Loader*.
 So in *onCreate*, change from:
 
 ```java
@@ -1292,7 +1308,6 @@ We need to be able to add some items. Just implement a menu item for that:
 
     <item
         android:id="@+id/newPerson"
-        android:onClick="onNewPerson"
         android:orderInCategory="1"
         android:showAsAction="ifRoom|withText"
         android:title="New"/>
@@ -1300,7 +1315,7 @@ We need to be able to add some items. Just implement a menu item for that:
 </menu>
 ```
 
-Inflate the menu and OnClick method in *PersonListActivity*:
+Inflate the menu and click handler in *PersonListActivity*:
 
 ```Java
 	@Override
@@ -1365,6 +1380,10 @@ Nexus 7
 
 ![Nexus 7](readme_img/nexus7.png)
 
+Galaxy Nexus List
+
 ![Galaxy Nexus](readme_img/gnexlist.png)
+
+Galaxy Nexus Details
 
 ![Galaxy Nexus](readme_img/gnexdetail1.png)
