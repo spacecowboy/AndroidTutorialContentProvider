@@ -1425,3 +1425,284 @@ Galaxy Nexus List
 Galaxy Nexus Details
 
 ![Galaxy Nexus](readme_img/gnexdetail1.png)
+
+## Explaining the details
+
+Let's clarify a few of the things I skipped over quite fast.
+
+### URIs
+
+A URI is pretty much an address. You are quite familiar with URIs like
+*http://www.google.com*. The URIs which point to information handled by
+ContentProviders always start with *content://* instead of *http://*, but
+you see that the structure is the same. This part is what is called the
+**scheme**. A URI pointing to a file on the SD card would have the scheme:
+*file://*.
+
+The next part of the URI is the **authority**. This identifies which entity
+(in our case, which provider in which app) should handle the request. In the
+example above the authority was *www.google.com*. In the case of content
+providers, the authority typically involves your package name (like
+*com.example.providerexample*) in order to guarantee its uniqueness to your
+provider. Some Google document says its convention to put *.provider* at
+the end. It makes sure the system knows to pass the request along to our
+content provider and not one of the others in the system.
+
+The final part of the URI is the **path**. The google address does not have
+a path. If it looked like: *http://www.google.com/a/folder/img.png* then
+*/a/folder/img.png* would be the path. This is meaningless to the system
+and only relevant to our content provider. We can define anything we
+want here. We use it to differentiate between different requests. For
+example: */persons* used in a query will retrieve a list of all persons.
+*/persons/id* will fetch only a single person with the designated id.
+*/squirrels* won't lead to anything since the provider doesn't know
+what to do with that. But it could. It's all up to the developer.
+
+### SQLite
+
+There are (many) books written about SQL so I'm not even going to try to
+condense everything thing in here. Instead I'll focus on what you have seen
+and what is obviously still missing.
+
+SQLite is merely the language dialect we are using. We are using it because
+it is what Google decided to support natively in Android. The point is
+to create and manage a database. A relational database (there are other kinds)
+stores its information in tables. Each entry corresponds to a row in the
+table, with each kind of information stored in the different columns.
+
+A concrete example:
+
+<table>
+  <tr>
+    <td>ID</td>
+    <td>name</td>
+    <td>phonenumber</td>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>Bob</td>
+    <td>326346</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Alice</td>
+    <td>326346</td>
+  </tr>
+</table>
+
+Created by:
+
+```SQL
+CREATE TABLE contact(
+  INT ID primary key,
+  TEXT name,
+  TEXT phonenumber)
+```
+
+This table would store people with their phone numbers and possibly other
+information as well. Now, if you wanted to support more than one phone number
+per person, this structure would break down. There is no way to make a list
+of phone numbers (without doing string parsing) for a single person here. To
+do that, you'd need to take advantage of the *relational* part of the database.
+We'd have to store the phonenumbers in a separate table. For example:
+
+<table>
+  <tr>
+    <td>ID</td>
+    <td>name</td>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>Bob</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Alice</td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td>ID</td>
+    <td>contactid</td>
+    <td>phonenumber</td>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>2</td>
+    <td>326346</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>1</td>
+    <td>326346</td>
+  </tr>
+</table>
+
+
+Created by:
+
+```SQL
+CREATE TABLE contact(
+  INT ID primary key,
+  TEXT name);
+
+CREATE TABLE phonenumber(
+  INT ID primary key,
+  INT contactid,
+  TEXT phonenumber);
+```
+
+Now we can store an arbitrary amount of phone numbers per contact. This might
+seem messy, and it kind of is. But, once you get the hang of it you can do
+some pretty powerful and convenient things too. One thing that I missed above
+was to have a *CONSTRAINT* on the table. Right now, the phonenumbers table
+has a column called contactid, but the database doesn't care what you insert
+there. Consider instead the following modification to the code:
+
+```SQL
+CREATE TABLE phonenumber(
+  INT ID primary key,
+  INT contactid REFERENCES contact,
+  TEXT phonenumber)
+```
+
+Now we are telling the database that this number should match a valid ID
+in the contacts table. If we do something that will make this statement
+false, the database will throw an exception. This is good because it
+prevents us from doing stupid things. Like filling the database with a
+bunch of orphan phone numbers. We can make things easy on ourselves however
+by adding a *CONFLICT RESOLUTION CLAUSE*:
+
+```SQL
+CREATE TABLE phonenumber(
+  INT ID primary key,
+  INT contactid REFERENCES contact ON DELETE CASCADE,
+  TEXT phonenumber)
+```
+
+If we delete a contact and that contact is linked to phone numbers, now
+those phone numbers are deleted automatically at the same time. So the database
+will not break because we delete a contact. We can also constrain the
+phone numbers to be unique:
+
+```SQL
+CREATE TABLE phonenumber(
+  INT ID primary key,
+  INT contactid REFERENCES contact ON DELETE CASCADE,
+  TEXT phonenumber,
+  UNIQUE(phonenumber))
+```
+
+This means that only one contact can be linked to a single phone number, which
+is probably a lot like reality. But consider something like a hard line, a
+home phone. That is probably linked to an entire family, logically speaking.
+We can make the database understand that by doing:
+
+```SQL
+CREATE TABLE phonenumber(
+  INT ID primary key,
+  INT contactid REFERENCES contact ON DELETE CASCADE,
+  TEXT phonenumber,
+  UNIQUE(contactid, phonenumber))
+```
+
+Now we are only constraining the phonenumber to be unique within a person's
+collection of numbers. So a number can not occur more than once for a single
+persons, which makes sense. But a number can belong to several persons, which
+is true in case of home phones.
+
+#### Queries
+
+To get information from the database, we will be doing a **query**. The
+result is returned in a Cursor. The basic SQL syntax of a query is:
+
+```SQL
+SELECT columnname1, columnname2
+  FROM table
+  WHERE something IS something
+  ORDER BY columname;
+```
+
+This returns a cursor with all the rows that matched the *WHERE*-part. But,
+you can do queries on multiple tables at once and do internal queries as
+part of your *WHERE*-clause. We can also do some arithmetic and string operations.
+In Android we will probably tend to use the suitable helper classes. They
+work fine unless you want to do things that concern multiple tables at
+once (JOINED queries). You have already seen the syntax being of the form:
+
+```Java
+db.query(tableName, columnsToReturn, "something IS ?", someValue,
+    null, null,
+    orderByColumnName,
+    null);
+```
+
+You can see that this matches quite literally the parts from the SQL code.
+The nulls represents possible other constraints
+that I will not mention.
+
+The question mark however is useful. While you could have put your argument
+directly in the string instead of the question mark, that might break at times.
+Namely when that argument is a string. For example:
+
+**WHERE column1 IS Arthur**
+
+would crash because the correct syntax would be
+
+**WHERE column1 IS 'Arthur'**
+
+And those quotes are easy to forget. Putting the question mark in the java
+call means that the implementation will wrap your argument in quotes for you.
+It's basically safer, and means you have a fixed where-clause as a static
+string somewhere, and only change the argument array.
+
+To order the data, just specify the columnname and whether to do it "ASC" or
+"DESC" (forwards or backwards). To sort the names in the list in the app
+alphabetically, just do something like:
+
+```Java
+final Cursor cursor = db.query(Person.TABLE_NAME, Person.FIELDS,
+				Person.COL_ID + " IS ?", new String[] { String.valueOf(id) },
+				null, null,
+                Person.COL_FIRSTNAME,
+                , null);
+```
+
+To do it backwards replace the OrderBy part with (don't forget the space):
+
+```Java
+Person.COL_FIRSTNAME + " DESC"
+```
+
+#### Changing data
+Operating on tables is possible using *insert*, *update* or *delete*. They
+are probably self explanatory from their names. Just like queries, *update*
+and *delete* accept WHERE-clauses. Which means you can update or delete
+a whole bunch of items fulfilling some criteria. Like deleting all
+people over 50 years old if you had that data.
+
+Another thing that is handy to know about is how to change tha database
+tables. SQLite will not allow you to delete columns from tables, but
+you can add columns or rename them. Adding columns after the fact has
+a few restrictions though:
+
+- The column may not have a PRIMARY KEY or UNIQUE constraint.
+- The column may not have a default value of CURRENT_TIME, CURRENT_DATE, CURRENT_TIMESTAMP, or an expression in parentheses.
+- If a NOT NULL constraint is specified, then the column must have a default value other than NULL.
+- If foreign key constraints are enabled and a column with a REFERENCES clause is added, the column must have a default value of NULL.
+
+The only thing relevant is probably the first one, they can not have a
+unique constraint which could be something of a bummer. The syntax you could
+put in your Databasehandler's onUpdate method would be something like:
+
+```Java
+public void onUpdate(SQLiteDatabase db, int oldVersion, int newVersion) {
+    if (oldVersion < 2) {
+        db.execSQL("ALTER TABLE contact ADD COLUMN INT age NOT NULL DEFAULT 25");
+    }
+}
+```
+
+Just remember to update your original create table statement for fresh installs.
+They will NOT get a call to onUpdate.
