@@ -54,7 +54,7 @@ anything in the background though. So if you have data stored as txt files,
 you can use a Loader then as well.
 
 ### What's SQLite and why do I want to store data in a database
-SQLite is a dialect of SQL, which stands for *Simple Query Language*. There are
+SQLite is a dialect of SQL, which stands for *Structured Query Language*. There are
 many dialects of SQL and this is the one supported by Android. It is a light and
 fast version of SQL which does not support all features present in other dialects,
 but you can do anything even though you might have to phrase it differently.
