@@ -23,7 +23,8 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
 	public DatabaseHandler(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
-		this.context = context;
+		// Good idea to have the context that doesn't die with the window
+		this.context = context.getApplicationContext();
 	}
 
 	@Override
