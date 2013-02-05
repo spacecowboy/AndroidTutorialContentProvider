@@ -152,7 +152,8 @@ the following code to the top of the class:
 
 	public DatabaseHandler(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
-		this.context = context;
+        // Good idea to use process context here
+		this.context = context.getApplicationContext();
 	}
 ```
 
