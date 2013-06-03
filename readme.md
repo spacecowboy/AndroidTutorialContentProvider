@@ -335,7 +335,7 @@ Your case might differ but I find that if my code wants to save a person,
 then it wants to save it regardless if it is already present in the
 database or not.
 
-The methods are *synchronized* because we are doing to use loaders to load
+The methods are *synchronized* because we are going to use loaders to load
 the data, which run on separate background threads. So we want to make sure
 that only one thread is reading/writing at any given time.
 
