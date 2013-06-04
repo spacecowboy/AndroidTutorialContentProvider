@@ -1414,6 +1414,28 @@ Change to LongExtras in *PersonListActivity.java*
     }
 ```
 
+## Add some data
+Before shipping off your newly created app you might want to add some data to it. You can do so by updating the onCreate method of the DatabaseHandler.
+First you create a new person object, populate it with the desired values and finally insert it using the insert method of the db object. Eventually it should look like below.
+Do note that ideally any predefined data should be loaded from resources preferably defined in xml. But doing so is beyound this tutorial.
+```
+	@Override
+	public void onCreate(SQLiteDatabase db) {
+		db.execSQL(Person.CREATE_TABLE);
+
+		Person person = new Person();
+		person.firstname = "Sylvester";
+		person.lastname = "Stallone";
+		person.bio = "...";
+		db.insert(Person.TABLE_NAME, null, person.getContent());
+
+		person.firstname = "Danny";
+		person.lastname = "DeVito";
+		person.bio = "...";
+		db.insert(Person.TABLE_NAME, null, person.getContent());
+	}
+```
+
 ## Final result
 Nexus 7
 
