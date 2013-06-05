@@ -30,6 +30,17 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 	@Override
 	public void onCreate(SQLiteDatabase db) {
 		db.execSQL(Person.CREATE_TABLE);
+
+		Person person = new Person();
+		person.firstname = "Sylvester";
+		person.lastname = "Stallone";
+		person.bio = "...";
+		db.insert(Person.TABLE_NAME, null, person.getContent());
+
+		person.firstname = "Danny";
+		person.lastname = "DeVito";
+		person.bio = "...";
+		db.insert(Person.TABLE_NAME, null, person.getContent());
 	}
 
 	@Override
