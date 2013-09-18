@@ -1,5 +1,11 @@
 # Things I wish I'd known about sooner: Lists, SQLite and ContentProviders
 
+This tutorial is good if you want to learn about SQLite and how to use it effectively
+in Android. Once you understand what I present here, 
+I can recommend another project of mine to
+[autogenerate](https://github.com/spacecowboy/AndroidCodeGenerator) all the classes
+you need for your project's specific database structure.
+
 ## Introduction
 
 Lists must be one of the most ubiquitous UI-elements. What app doesn't have them?
