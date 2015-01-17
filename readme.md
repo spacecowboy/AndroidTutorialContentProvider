@@ -1,10 +1,11 @@
 # Things I wish I'd known about sooner: Lists, SQLite and ContentProviders
 
 This tutorial is good if you want to learn about SQLite and how to use it effectively
-in Android. Once you understand what I present here, 
-I can recommend another project of mine to
-[autogenerate](https://github.com/spacecowboy/AndroidCodeGenerator) all the classes
-you need for your project's specific database structure.
+in Android. I have upgraded the project to Android Studio so some of the
+Eclipse-centric content is slightly out-dated, but the gist of it is the same.
+All the same functionality is present in Android Studio as it was in Eclipse,
+with the same kind of wizards etc. You can also enable a setting in Android Studio
+so most of the key commands are the same.
 
 ## Introduction
 
